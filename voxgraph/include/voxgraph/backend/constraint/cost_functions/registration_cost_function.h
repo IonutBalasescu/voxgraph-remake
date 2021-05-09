@@ -35,9 +35,9 @@ class RegistrationCostFunction : public ceres::CostFunction {
     bool use_esdf_distance = true;
 
     // Visuals for debugging purposes
-    bool visualize_residuals = false;
-    bool visualize_gradients = false;
-    bool visualize_transforms_ = false;
+    bool visualize_residuals = true;
+    bool visualize_gradients = true;
+    bool visualize_transforms_ = true;
   };
 
   RegistrationCostFunction(VoxgraphSubmap::ConstPtr reference_submap_ptr,
@@ -66,19 +66,7 @@ class RegistrationCostFunction : public ceres::CostFunction {
 
   // Used for residual and Jacobian visualization
   mutable CostFunctionVisuals cost_function_visuals_;
-
-  // This matrix is used to interpolate voxels
-  // It corresponds to matrix B_1 from paper: http://spie.org/samples/PM159.pdf
-  // clang-format off
-  const voxblox::InterpTable interp_table_ =
-      (voxblox::InterpTable() << 1,  0,  0,  0,  0,  0,  0,  0,
-                                -1,  0,  0,  0,  1,  0,  0,  0,
-                                -1,  0,  1,  0,  0,  0,  0,  0,
-                                -1,  1,  0,  0,  0,  0,  0,  0,
-                                 1,  0, -1,  0, -1,  0,  1,  0,
-                                 1, -1, -1,  1,  0,  0,  0,  0,
-                                 1, -1,  0,  0, -1,  1,  0,  0,
-                                -1,  1,  1, -1,  1, -1, -1,  1).finished();
+  
   // clang-format on
 };
 }  // namespace voxgraph
