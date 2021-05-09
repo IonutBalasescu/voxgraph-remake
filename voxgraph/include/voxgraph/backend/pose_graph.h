@@ -33,7 +33,6 @@ class PoseGraph {
     constraints_collection_.resetRegistrationConstraints();
   }
 
-  void initialize(bool exclude_registration_constraints = false);
   void optimize(bool exclude_registration_constraints = false);
 
   PoseMap getSubmapPoses();

@@ -31,7 +31,6 @@ bool PoseGraph::hasReferenceFrameNode(
 
 void PoseGraph::addAbsolutePoseConstraint(
     const voxgraph::AbsolutePoseConstraint::Config& config) {
-  // TODO(victorr): Add check on whether both endpoints exist
 
   // Add to the constraint set
   constraints_collection_.addAbsolutePoseConstraint(config);
@@ -39,7 +38,6 @@ void PoseGraph::addAbsolutePoseConstraint(
 
 void PoseGraph::addRelativePoseConstraint(
     const RelativePoseConstraint::Config& config) {
-  // TODO(victorr): Add check on whether both endpoints exist
 
   // Add to the constraint set
   constraints_collection_.addRelativePoseConstraint(config);
@@ -59,7 +57,6 @@ void PoseGraph::addRegistrationConstraint(
   // Add to the constraint set
   constraints_collection_.addRegistrationConstraint(config);
 
-  // TODO(victorr): Remove or permanently add the experimental code below
   if (config.registration.registration_point_type ==
       VoxgraphSubmap::RegistrationPointType::kIsosurfacePoints) {
     RegistrationConstraint::Config mirrored_config = config;
@@ -71,38 +68,31 @@ void PoseGraph::addRegistrationConstraint(
   }
 }
 
-void PoseGraph::initialize(bool exclude_registration_constraints) {
+void PoseGraph::optimize(bool exclude_registration_constraints) {
   // Initialize the problem
   problem_options_.local_parameterization_ownership =
       ceres::Ownership::DO_NOT_TAKE_OWNERSHIP;
   problem_ptr_.reset(new ceres::Problem(problem_options_));
 
-  // Add the appropriate constraints
+  // Function from other file
+  // Adds the 3 constraints
+  // The file is from the original framework
   constraints_collection_.addConstraintsToProblem(
       node_collection_, problem_ptr_.get(), exclude_registration_constraints);
-}
 
-void PoseGraph::optimize(bool exclude_registration_constraints) {
-  // Initialize the problem
-  initialize(exclude_registration_constraints);
-
-  // Run the solver
-  ceres::Solver::Options ceres_options;
-  // TODO(victorr): Set these from parameters
-  // TODO(victorr): Look into manual parameter block ordering
-  ceres_options.parameter_tolerance = 3e-3;
-  //  ceres_options.max_num_iterations = 4;
-  ceres_options.max_solver_time_in_seconds = 4;
-  ceres_options.num_threads = 4;
-  ceres_options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
-  // NOTE: For small problems DENSE_SCHUR is much faster
-
+  // Configure the options
+  ceres::Solver::Options options;
+  
+  options.parameter_tolerance = 0.1;
+  options.max_solver_time_in_seconds = 4;
+  options.num_threads = 12;
+  options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
+  
   ceres::Solver::Summary summary;
-  ceres::Solve(ceres_options, problem_ptr_.get(), &summary);
+  ceres::Solve(options, problem_ptr_.get(), &summary);
 
-  // Display and store the solver summary
+  // Display the result of the optimization
   std::cout << summary.FullReport() << std::endl;
-  solver_summaries_.emplace_back(summary);
 }
 
 PoseGraph::PoseMap PoseGraph::getSubmapPoses() {
