@@ -80,7 +80,7 @@ const voxblox::InterpTable B =
 bool RegistrationCostFunction::Evaluate(double const* const* parameters,
                                         double* residuals,
                                         double** jacobians) const {
-  std::cout << "intra evaluate";
+  //std::cout << "intra evaluate";
   
   unsigned int residual_idx = 0;
   double summed_weight = 0;
@@ -91,17 +91,17 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
 
   // get the coordinate of the frames
   // and set the values to compute the transformation matrix
-  voxblox::Transformation::Vector6 T_i = {
-    parameters[0][0], //x
-    parameters[0][1], //y
-    parameters[0][2], //z
-    0,
-    0,
-    parameters[0][3] //yaw
-  };
+  voxblox::Transformation::Vector6 T_i;
+  T_i[0] = parameters[0][0];  // x
+  T_i[1] = parameters[0][1];  // y
+  T_i[2] = parameters[0][2];  // z
+  T_i[3] = 0;
+  T_i[4] = 0;
+  T_i[5] = parameters[0][3];  // yaw
 
-  //the function exp receives an 6 element vector and return
-  //the transformation matrix
+
+  // the function exp receives an 6 element vector and return
+  // the transformation matrix
   // gets(x y z 0 0 yaw)
   // return
   // (cos yaw) (-sin yaw) 0 x
@@ -114,15 +114,13 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
   const voxblox::Transformation S_i = voxblox::Transformation::exp(T_i);
 
   // The same thing is now done for the second frame too
-  voxblox::Transformation::Vector6 T_j = {
-    parameters[1][0], //x
-    parameters[1][1], //y
-    parameters[1][2], //z
-    0,
-    0,
-    parameters[1][3] //yaw
-  };
-
+  voxblox::Transformation::Vector6 T_j;
+  T_j[0] = parameters[1][0];  // x 
+  T_j[1] = parameters[1][1];  // y 
+  T_j[2] = parameters[1][2];  // z 
+  T_j[3] = 0;
+  T_j[4] = 0;
+  T_j[5] = parameters[1][3];  // yaw
   const voxblox::Transformation S_j = voxblox::Transformation::exp(T_j);
 
   // Compute the T_i_j matrix specified in the article
@@ -152,6 +150,14 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
     bool interp_possible;
     voxblox::InterpVector distances;
     voxblox::InterpVector q_vector;
+
+    
+    // that is going to be used for further computations
+    // again, from different parts of the code the functions is called with
+    // different parameters
+    // these 2 cases are from the original code
+    // the purpose is to get the distance vector (mentioned in the article)
+    // that is going to be used for further computations
     if (config_.use_esdf_distance) {
       const voxblox::EsdfVoxel* neighboring_voxels[8];
       interp_possible = esdf_interpolator_.getVoxelsAndQVector(
@@ -236,8 +242,8 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
         // Jacobian of the transformation T_i_j * current_point
         Eigen::Matrix<float, 3, 4> T_der_2;
         T_der_2
-            << -cos_e, -sin_e, 0, -xi*sin_emo + yi*cos_emo + (x_j-x_i)*sin_e - (y_j-y_i)*cos_e,  // NOLINT
-                sin_e, -cos_e, 0, -xi*cos_emo - yi*sin_emo + (x_j-x_i)*cos_e + (y_j-y_i)*sin_e,  // NOLINT
+            << -cos_e, -sin_e, 0, -xi*sin_emo + yi*cos_emo + (x_j-x_i)*sin_e - (y_j-y_i)*cos_e,
+                sin_e, -cos_e, 0, -xi*cos_emo - yi*sin_emo + (x_j-x_i)*cos_e + (y_j-y_i)*sin_e,
                 0,      0,    -1,  0;
 
         // Jacobian of the residuals i pose params
@@ -252,16 +258,13 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
 
       // Store the Jacobians for Ceres
       if (jacobians[0] != nullptr) {
-        // Jacobians w.r.t. the reference submap pose
         for (int j = 0; j < 4; j++) {
           jacobians[0][residual_idx * 4 + j] = residual_i[j];
-
         }
       }
       if (jacobians[1] != nullptr) {
-        // Jacobians w.r.t. the reading submap pose
         for (int j = 0; j < 4; j++) {
-          jacobians[0][residual_idx * 4 + j] = residual_j[j];
+          jacobians[1][residual_idx * 4 + j] = residual_j[j];
         }
       }
     }
@@ -279,9 +282,10 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
         for (int j = 0; j < 4; j++) {
           jacobians[0][i * 4 + j] *= factor;
         }
+      }
       if (jacobians[1] != nullptr) {
         for (int j = 0; j < 4; j++) {
-          jacobians[i][i * 4 + j] *= factor;
+          jacobians[1][i * 4 + j] *= factor;
         }
       }
     }
