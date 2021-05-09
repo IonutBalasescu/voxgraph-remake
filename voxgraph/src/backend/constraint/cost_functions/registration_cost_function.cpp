@@ -91,14 +91,14 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
 
   // get the coordinate of the frames
   // and set the values to compute the transformation matrix
-  voxblox::Transformation::Vector6 T_i;
-  T_i[0] = parameters[0][0];  // x
-  T_i[1] = parameters[0][1];  // y
-  T_i[2] = parameters[0][2];  // z
-  T_i[3] = 0;
-  T_i[4] = 0;
-  T_i[5] = parameters[0][3];  // yaw
-
+  voxblox::Transformation::Vector6 T_i = {
+    parameters[0][0], //x
+    parameters[0][1], //y
+    parameters[0][2], //z
+    0,
+    0,
+    parameters[0][3] //yaw
+  };
 
   //the function exp receives an 6 element vector and return
   //the transformation matrix
@@ -114,13 +114,15 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
   const voxblox::Transformation S_i = voxblox::Transformation::exp(T_i);
 
   // The same thing is now done for the second frame too
-  voxblox::Transformation::Vector6 T_j;
-  T_j[0] = parameters[1][0];  // x 
-  T_j[1] = parameters[1][1];  // y 
-  T_j[2] = parameters[1][2];  // z 
-  T_j[3] = 0;
-  T_j[4] = 0;
-  T_j[5] = parameters[1][3];  // yaw
+  voxblox::Transformation::Vector6 T_j = {
+    parameters[1][0], //x
+    parameters[1][1], //y
+    parameters[1][2], //z
+    0,
+    0,
+    parameters[1][3] //yaw
+  };
+
   const voxblox::Transformation S_j = voxblox::Transformation::exp(T_j);
 
   // Compute the T_i_j matrix specified in the article
@@ -249,17 +251,16 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
       // Store the Jacobians for Ceres
       if (jacobians[0] != nullptr) {
         // Jacobians w.r.t. the reference submap pose
-        jacobians[0][residual_idx * 4 + 0] = residual_i[0];
-        jacobians[0][residual_idx * 4 + 1] = residual_i[1];
-        jacobians[0][residual_idx * 4 + 2] = residual_i[2];
-        jacobians[0][residual_idx * 4 + 3] = residual_i[3];
+        for (int j = 0; j < 4; j++) {
+          jacobians[0][residual_idx * 4 + j] = residual_i[j];
+
+        }
       }
       if (jacobians[1] != nullptr) {
         // Jacobians w.r.t. the reading submap pose
-        jacobians[1][residual_idx * 4 + 0] = residual_j[0];
-        jacobians[1][residual_idx * 4 + 1] = residual_j[1];
-        jacobians[1][residual_idx * 4 + 2] = residual_j[2];
-        jacobians[1][residual_idx * 4 + 3] = residual_j[3];
+        for (int j = 0; j < 4; j++) {
+          jacobians[0][residual_idx * 4 + j] = residual_j[j];
+        }
       }
     }
     
@@ -273,16 +274,13 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
     residuals[i] *= factor;
     if (jacobians != nullptr) {
       if (jacobians[0] != nullptr) {
-        jacobians[0][i * 4 + 0] *= factor;
-        jacobians[0][i * 4 + 1] *= factor;
-        jacobians[0][i * 4 + 2] *= factor;
-        jacobians[0][i * 4 + 3] *= factor;
-      }
+        for (int j = 0; j < 4; j++) {
+          jacobians[0][i * 4 + j] *= factor;
+        }
       if (jacobians[1] != nullptr) {
-        jacobians[1][i * 4 + 0] *= factor;
-        jacobians[1][i * 4 + 1] *= factor;
-        jacobians[1][i * 4 + 2] *= factor;
-        jacobians[1][i * 4 + 3] *= factor;
+        for (int j = 0; j < 4; j++) {
+          jacobians[i][i * 4 + j] *= factor;
+        }
       }
     }
   }
