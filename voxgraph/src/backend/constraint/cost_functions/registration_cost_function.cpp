@@ -173,10 +173,12 @@ bool RegistrationCostFunction::Evaluate(double const* const* parameters,
     }
 
     // Add residual
-    const double reading_distance = q_vector * (B * distances.transpose());
-
-    residuals[sample_i] =
-          (point.distance - reading_distance) * point.weight;
+    if (interp_possible) {
+      const double reading_distance = q_vector * (B * distances.transpose());
+      residuals[residual_idx] = (point.distance - reading_distance) * point.weight;
+    } else {
+      residuals[residual_idx] = point.weight * config_.no_correspondence_cost;
+    }
 
 
     // Save values usefull for jacobian
